@@ -1,0 +1,24 @@
+WSO2 API Manager中password授权模式的token获取方式如：
+curl -k -d "grant_type=password&username=admin&password=admin" -H "Authorization: Basic M0lPTHJtcFBlMmR3MGRUcXdkTWJVSjNvQ2VBYTpqdVUzSzZiSHVhQUtIakZ3aDUyZ09QRHJmemNh" -H "Content-Type: application/x-www-form-urlencoded" https://localhost:9443/token
+
+如果需要在angular、ember中单页应用（SPA）发起token获取请求会涉及跨域访问问题，为了解决CORS跨域访问问题，需要对WSO2 API Manager做以下配置：
+
+1.首先修改<APIM_HOME>/repository/conf/api-manager.xml
+<CORSConfiguration>
+    <Enabled>true</Enabled>
+    <Access-Control-Allow-Origin>https://localhost:9443,http://localhost:9763,http://localhost:9000</Access-Control-Allow-Origin>
+    <Access-Control-Allow-Headers>authorization,Access-Control-Allow-Origin,Content-Type</Access-Control-Allow-Headers>
+    <!--Configure Access-Control-Allow-Methods-->
+    <Access-Control-Allow-Methods>GET,POST,PUT,DELETE,OPTIONS</Access-Control-Allow-Methods>
+</CORSConfiguration>
+
+其中http://localhost:9000为angular单页应用所在域名及端口，以上配置保证了http://localhost:9000上的应用可以跨域请求API Manager的API网关上的API，但是token API请求还需要做第二步配置。
+
+2.修改<APIM_HOME>/repository/deployment/server/synapse-configs/default/api/_TokenAPI_.xml
+    <handlers>
+        <handler class="org.wso2.carbon.apimgt.gateway.handlers.security.CORSRequestHandler">
+               <property name="apiImplementationType" value="INLINE"/>
+        </handler>
+        <handler class="org.wso2.carbon.apimgt.gateway.handlers.ext.APIManagerCacheExtensionHandler"/>
+        <handler class="org.wso2.carbon.apimgt.gateway.handlers.common.SynapsePropertiesHandler"/>
+    </handlers>
